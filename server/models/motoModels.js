@@ -1,10 +1,9 @@
 const mongoose = require('mongoose');
+require('dotenv').config();
 
 // let uri = process.env.MONGO_URI
 
-const MONGO_URI = 'mongodb+srv://gahl:peled@motocluster1.kcp1wyh.mongodb.net/?retryWrites=true&w=majority'
-
-mongoose.connect(MONGO_URI, {
+mongoose.connect(process.env.MONGO_URI, {
   // options for the connect method to parse the URI
   useNewUrlParser: true,
   useUnifiedTopology: true,

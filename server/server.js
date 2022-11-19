@@ -7,6 +7,7 @@ const app = express()
 devBundle.compile(app)
 const CURRENT_WORKING_DIR = process.cwd()
 const apiRouter = require('./routes/api')
+require('dotenv').config();
 
 const models = require('./models/motoModels')
 
