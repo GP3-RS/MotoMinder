@@ -12,7 +12,7 @@ const Task = (props) => {
     else completed.push(<input key={props.number} onClick={props.completeTask} className='completedRadio' type="checkbox" value="completed" defaultChecked></input>)
     if (props.task.maint) type = 'Maintanence';
     else type = 'Upgrade';
-    let cost = Number(props.task.cost).toFixed(2);
+    let cost = props.task.cost.toLocaleString("en-US", {minimumFractionDigits: 2, maximumFractionDigits: 2});
 
     return(
       <div className={props.className} id={props.task._id}>

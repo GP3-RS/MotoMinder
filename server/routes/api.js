@@ -51,4 +51,8 @@ router.get('/all',
     (req, res) => res.status(200).json(res.locals)
 )
 
+router.get('/bikeImg/:query',
+    motoController.getBikeImg,
+    (req, res) => res.status(200).json(res.locals.bikeImg))
+
 module.exports = router;

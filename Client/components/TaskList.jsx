@@ -6,10 +6,13 @@ import BikeButton from './bikeButton.jsx';
 
 const TaskList = () => {
 
-  const [bikeImg, setImg] = useState(null);
+  const [bikeImg, setImg] = useState('https://media.tenor.com/On7kvXhzml4AAAAj/loading-gif.gif');
   const [currentBike, setCurrentBike] = useState(null);
   const [bikes, setBikes] = useState([]);
   const [tasks, setTasks] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [imgCache, setImgCache] = useState({});
+
 
   useEffect(() => {
     fetch('/api/all')
@@ -21,14 +24,20 @@ const TaskList = () => {
         })
   }, [])
 
-  useEffect(() => {
+  useEffect(async () => {
+    setLoading(true);
     if (currentBike) {
       let query = `${currentBike.year}+${currentBike.make}+${currentBike.model}`.replace(/\s/g, '+')
-      fetch(`https://www.googleapis.com/customsearch/v1?key=AIzaSyAYKIcLqDJPrytgaJBawgXStAISUhf9stE&cx=b5cac7e077796450d&q=${query}`)
+      if (imgCache[query]) setImg(imgCache[query]);
+      else await fetch(`/api/BikeImg/${query}`)
         .then(res => res.json())
-        .then(data => setImg(data.items[0].pagemap.cse_image[0].src))
+        .then(img => {
+          setImg(img);
+          setImgCache({...imgCache, query: img})
+        })
         .catch(err => console.log(err.toString()));
       }
+    setLoading(false);
   }, [currentBike])
 
   const addTask = async(event) => {
@@ -40,14 +49,20 @@ const TaskList = () => {
     let maint = event.target.previousSibling.previousSibling.lastChild.checked;
     let cost = event.target.previousSibling.value;
     if (cost === '') cost = 0;
-    // if (!(/^\d+$/.test(cost))) {
-    //   window.alert('Cost must be a number');
-    //   throw new Error('Cost must be a number');
-    // }
+    cost = cost.replace(/\,/g,'');
+    cost = cost.split('.');
+    if (!cost.every(el => (/^\d+$/.test(el))) || cost.length > 2) {
+      window.alert('Cost must be a number with no more than one decimal');
+      throw new Error('Cost must be a number');
+    }
+    cost = cost.join('.');
     if (task === '') throw new Error('You must input something into the text field before adding a task. It cannot be left blank');
-    cost = Number(cost).toFixed(2);
+    cost = cost.toLocaleString("en-US", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    });
 
-    setTasks(tasks.concat({done: false, maint: maint, task: task, cost: cost}))
+    setTasks(tasks.concat({done: false, maint, task, cost}))
 
     await fetch('/api', {
       method: 'POST',
@@ -301,7 +316,7 @@ const TaskList = () => {
         <AddTask addTask={addTask}/>
         <div>
           <p className='stats' id='totalTasks'>Total Incomplete Tasks: {activeTasks}</p>
-          <p className='stats' id='totalCost'>Total Cost: $ {Number(totalCost).toFixed(2)}</p>
+          <p className='stats' id='totalCost'>Total Cost: $ {totalCost.toLocaleString("en-US", {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
         </div>
         <div className='columns'>
           <p>Completed?</p>
@@ -320,11 +335,11 @@ const TaskList = () => {
         <div>
           <p className='columns'>Completed Tasks</p>
           <p className='stats' id='totalCompletedTasks'>Total Completed Tasks: {completedTasks}</p>
-          <p className='stats'>Total Spent: $ {Number(totalSpent).toFixed(2)}</p>
+          <p className='stats'>Total Spent: $ {totalSpent.toLocaleString("en-US", {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
           <p className='stats'>Uncheck to revert back to incomplete</p>
           {completedArr}
         </div>
-        {bikeImg && <img id='bikeImg' src={bikeImg}></img>}
+        {loading ? <img className='bikeImg' src='https://media.tenor.com/On7kvXhzml4AAAAj/loading-gif.gif'></img> : <img className='bikeImg' src={bikeImg}></img>}
       </div>
     )
 }

@@ -1,6 +1,17 @@
-const models = require('../models/motoModels')
+const models = require('../models/motoModels');
+const redis = require('redis');
+const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args))
+
+let redisClient;
 
 const motoController = {};
+
+(async () => {
+    redisClient = redis.createClient();
+    redisClient.on("connect", () => console.log('Connected to Redis cache successfully.'))
+    redisClient.on("error", (error) => console.error(`Error : ${error}`));
+    await redisClient.connect();
+})();
 
 motoController.addTask = async (req, res, next) => {
     let { maint, task, cost, moto_id } = req.body
@@ -100,6 +111,36 @@ motoController.deleteBike = (req, res, next) => {
     models.Task.remove({moto_id: id})
         .exec()
         .catch(err => next({log: 'error in middleware deletBike', message: 'error in middleware deleteBike'}))
+}
+
+motoController.getBikeImg = async (req, res, next) => {
+    let start = Date.now();
+    const { query } = req.params;
+    const value = await redisClient.get(query);
+    if (value) {
+        console.log('cache hit');
+        res.locals.bikeImg = value;
+        console.log('time to return results: ', Date.now() - start);
+        return next();
+    }
+    else await fetch(process.env.GOOGLE_API + req.params.query)
+        .then(data => data.json())
+        .then(data => {
+            if (data) {
+                console.log('cache miss');
+                redisClient.set(query, data.items[0].pagemap.cse_image[0].src, 'EX', 10, (err, result) => {
+                    if (err) {
+                        console.error(err);
+                    }
+                    else console.log('Key set: ', result);
+                });
+                res.locals.bikeImg = data;
+                console.log('time to return results: ', Date.now() - start);
+                return next();
+            }
+            else return next({message: 'ERROR: Google API fetch request failed, likely because you have surpassed your daily limit of queries. Error message', log: 'Google API fetch failed'})
+        })
+        .catch(err => next({message: 'ERROR: Google API fetch request failed, likely because you have surpassed your daily limit of queries. Exact message received by server is: ' + err.message, log: 'Google API fetch failed and caught by catch block'}))
 }
 
 
