@@ -1,8 +1,5 @@
 import React, { Component } from 'react';
 import { hot } from 'react-hot-loader/root';
-import ReactDOM from 'react-dom';
-import { render } from 'react-dom';
-import { Link } from 'react-router-dom';
 
 // THIS BREAKS HMR
 // import motoController from '../../server/controllers/motoController';

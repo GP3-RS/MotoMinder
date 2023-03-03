@@ -1,8 +1,5 @@
 import React, { Component } from 'react';
 import { hot } from 'react-hot-loader/root';
-import ReactDOM from 'react-dom';
-import { render } from 'react-dom';
-import { Link } from 'react-router-dom';
 import Task from './Task.jsx'
 import AddTask from './AddTask.jsx';
 import BikeButton from './bikeButton.jsx';
@@ -271,7 +268,8 @@ class TaskList extends React.Component {
       await this.setState(prevState => ({
         currentBike: prevState.bikes.filter(el => {
           return el._id === event.target.id;
-        })[0]
+        })[0],
+        bikeImg: 'https://media.tenor.com/On7kvXhzml4AAAAj/loading-gif.gif'
       }))
     }
 

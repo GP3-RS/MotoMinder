@@ -1,8 +1,6 @@
 import { hot } from 'react-hot-loader/root';
 import './stylesheets/styles.scss'
-import ReactDOM from 'react-dom';
 import React, { Component } from 'react';
-import AddTask from './components/AddTask.jsx';
 import TaskList from './components/TaskList.jsx'
 
 class App extends React.Component {

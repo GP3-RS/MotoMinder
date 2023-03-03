@@ -1,8 +1,5 @@
-import React, { Component } from 'react';
+import React from 'react';
 import { hot } from 'react-hot-loader/root';
-import ReactDOM from 'react-dom';
-import { render } from 'react-dom';
-import { Link } from 'react-router-dom';
 
 class BikeButton extends React.Component {
   render() {
