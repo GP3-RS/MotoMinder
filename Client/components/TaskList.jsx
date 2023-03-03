@@ -15,21 +15,21 @@ const TaskList = () => {
     fetch('/api/all')
         .then(res => res.json())
         .then(data => {
-          console.log('data is', data)
           setTasks(data.tasks);
           setBikes(data.bikes);
           setCurrentBike(data.bikes[0]);
         })
-        .then(res => {
-          if (currentBike) {
-          let query = `${currentBike.year}+${currentBike.make}+${currentBike.model}`.replace(/\s/g, '+')
-          fetch(`https://www.googleapis.com/customsearch/v1?key=AIzaSyAYKIcLqDJPrytgaJBawgXStAISUhf9stE&cx=b5cac7e077796450d&q=${query}`)
-            .then(res => res.json())
-            .then(data => setImg(data.items[0].pagemap.cse_image[0].src))
-            .catch(err => console.log(err))
-          }
-        })
   }, [])
+
+  useEffect(() => {
+    if (currentBike) {
+      let query = `${currentBike.year}+${currentBike.make}+${currentBike.model}`.replace(/\s/g, '+')
+      fetch(`https://www.googleapis.com/customsearch/v1?key=AIzaSyAYKIcLqDJPrytgaJBawgXStAISUhf9stE&cx=b5cac7e077796450d&q=${query}`)
+        .then(res => res.json())
+        .then(data => setImg(data.items[0].pagemap.cse_image[0].src))
+        .catch(err => console.log(err.toString()));
+      }
+  }, [currentBike])
 
   const addTask = async(event) => {
     if (!currentBike) {
@@ -106,7 +106,7 @@ const TaskList = () => {
     let newTask = window.prompt('Edit your task: ', currentTask);
     
     const id = event.target.parentNode.parentNode.id;
-    await 
+ 
     setTasks(tasks.map(el => {
       if (el._id === id) {
       return {
@@ -134,7 +134,7 @@ const TaskList = () => {
     let value = event.target.checked;
     const id = event.target.parentNode.parentNode.id;
 
-    await setTasks(tasks.map(el => {
+    setTasks(tasks.map(el => {
       if (el._id === id) {
       return {
         ...el,
@@ -213,35 +213,15 @@ const TaskList = () => {
         .then(data => {
           return setBikes(data.bikes)
         })
-    
-    if (currentBike) {
-      let query = `${currentBike.year}+${currentBike.make}+${currentBike.model}`.replace(/\s/g, '+')
-      fetch(`https://www.googleapis.com/customsearch/v1?key=AIzaSyAYKIcLqDJPrytgaJBawgXStAISUhf9stE&cx=b5cac7e077796450d&q=${query}`)
-        .then(res => res.json())
-        .then(data => {
-          return setImg(data.items[0].pagemap.cse_image[0].src);
-        })
-      }
   }
 
   const changeBike = async (event) => {
 
     if (event.target.id === currentBike._id) return;
 
-    else {
-      setCurrentBike(bikes.filter(el => {
-        return el._id === event.target.id;
-      })[0])
-    }
-
-    if (currentBike) {
-      let query = `${currentBike.year}+${currentBike.make}+${currentBike.model}`.replace(/\s/g, '+')
-      fetch(`https://www.googleapis.com/customsearch/v1?key=AIzaSyAYKIcLqDJPrytgaJBawgXStAISUhf9stE&cx=b5cac7e077796450d&q=${query}`)
-        .then(res => res.json())
-        .then(data => {
-          return setImg(data.items[0].pagemap.cse_image[0].src)
-        })
-      }
+    setCurrentBike(bikes.filter(el => {
+      return el._id === event.target.id;
+    })[0])
 }
 
   const deleteBike = async (event) => {
@@ -251,10 +231,10 @@ const TaskList = () => {
 
     if (confirm === true) {
       setCurrentBike(bikes.filter(el => {
-        return el._id !== prevState.currentBike._id;
+        return el._id !== currentBike._id;
       })[0])
       setBikes(bikes.filter(el => {
-        return el._id !== prevState.currentBike._id;
+        return el._id !== currentBike._id;
       }))
   
       await fetch('/api/bike', {
@@ -273,7 +253,6 @@ const TaskList = () => {
   const tasksArr = [];
   const completedArr = [];
   const bikeButtonsArr = [];
-  const bikeImgArr = [];
   let activeTasks = 0;
   let completedTasks = 0;
   let totalCost = 0;
@@ -287,7 +266,6 @@ const TaskList = () => {
         tasksArr.push(<Task className='task' number={number} task={tasks[i]} key={i} deleteTask={deleteTask} editTask={editTask} completeTask={completeTask}/>);
         totalCost += tasks[i].cost;
         activeTasks++;
-        console.log(tasksArr);
       }
       else if (tasks[i].moto_id === currentBike._id) {
         completedArr.push(<Task className='completedTask' number={number} task={tasks[i]} key={i} deleteTask={deleteTask} editTask={editTask} completeTask={completeTask}/>)
@@ -297,8 +275,6 @@ const TaskList = () => {
     }
 
     currentBikeString = `Current bike is:  ${currentBike.year} ${currentBike.make} ${currentBike.model}`
-
-    bikeImgArr.push(<img id='bikeImg' src={bikeImg}></img>)
 
     for (let i = 0; i < bikes.length; i++) {
       let keyString = `${bikes[i].year}${bikes[i].make}${bikes[i].model}`
@@ -348,7 +324,7 @@ const TaskList = () => {
           <p className='stats'>Uncheck to revert back to incomplete</p>
           {completedArr}
         </div>
-        {bikeImgArr}
+        {bikeImg && <img id='bikeImg' src={bikeImg}></img>}
       </div>
     )
 }
