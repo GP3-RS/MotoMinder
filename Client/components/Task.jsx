@@ -1,35 +1,34 @@
-import React, { Component } from 'react';
+import React from 'react';
 import { hot } from 'react-hot-loader/root';
 
 // THIS BREAKS HMR
 // import motoController from '../../server/controllers/motoController';
 
-class Task extends React.Component {
-  render() {
+const Task = (props) => {
     let type;
-    let flag = this.props.task.done;
+    let flag = props.task.done;
     let completed = [];
-    if (flag === false) completed.push(<input key={this.props.number} onClick={this.props.completeTask} className='completedRadio' type="checkbox" value="completed"></input>)
-    else completed.push(<input key={this.props.number} onClick={this.props.completeTask} className='completedRadio' type="checkbox" value="completed" defaultChecked></input>)
-    if (this.props.task.maint) type = 'Maintanence';
+    if (flag === false) completed.push(<input key={props.number} onClick={props.completeTask} className='completedRadio' type="checkbox" value="completed"></input>)
+    else completed.push(<input key={props.number} onClick={props.completeTask} className='completedRadio' type="checkbox" value="completed" defaultChecked></input>)
+    if (props.task.maint) type = 'Maintanence';
     else type = 'Upgrade';
-    let cost = Number(this.props.task.cost).toFixed(2);
+    let cost = Number(props.task.cost).toFixed(2);
+
     return(
-      <div className={this.props.className} id={this.props.task._id}>
+      <div className={props.className} id={props.task._id}>
         <div>
             {completed}
         </div>
-        <p className='taskText'>{this.props.task.task}</p>
+        <p className='taskText'>{props.task.task}</p>
         <p className='taskTypeValue'>{type}</p>
         <p className='costValue'>$ {cost}</p>
         <div className='options'>
-            <button className='editButton' onClick={this.props.editTask}>EDIT</button>
-            <button className='deleteButton' onClick={this.props.deleteTask}>DELETE</button>
+            <button className='editButton' onClick={props.editTask}>EDIT</button>
+            <button className='deleteButton' onClick={props.deleteTask}>DELETE</button>
         </div>
       </div>
     ) 
   } 
-}
 
 
 export default hot(Task);

@@ -1,10 +1,9 @@
 import { hot } from 'react-hot-loader/root';
 import './stylesheets/styles.scss'
-import React, { Component } from 'react';
-import TaskList from './components/TaskList.jsx'
+import React from 'react';
+import TaskList from './components/TaskList'
 
-class App extends React.Component {
-  render() {
+const App = () => {
     return (
       <div className="mainDiv">
         <h1>Motorcycle Maintanence and Upgrades</h1>
@@ -12,6 +11,6 @@ class App extends React.Component {
       </div>
     )
   }
-}
+
 
 export default hot(App) ;
