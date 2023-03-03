@@ -1,8 +1,7 @@
-import React, { Component } from 'react';
+import React from 'react';
 import { hot } from 'react-hot-loader/root';
 
-class AddTask extends Component {
-  render() {
+const AddTask = (props) => {
     return(
       <div className='addTask'>
         <input id='taskInput' placeholder='Input Your Next Maintanence/Upgrade Task Here'></input>
@@ -11,11 +10,10 @@ class AddTask extends Component {
           <input type="checkbox"></input>
         </label>
         <input id='costInput' placeholder='$ Cost'></input>
-        <button id='addButton' onClick={this.props.addTask}>Add</button>
+        <button id='addButton' onClick={props.addTask}>Add</button>
       </div>
     ) 
   } 
-}
 
 
 export default hot(AddTask);
