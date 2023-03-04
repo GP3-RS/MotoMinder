@@ -1,55 +1,47 @@
-import React, { Component } from 'react';
+import React, {useState, useEffect} from 'react';
 import { hot } from 'react-hot-loader/root';
 import Task from './Task.jsx'
 import AddTask from './AddTask.jsx';
 import BikeButton from './bikeButton.jsx';
 
-class TaskList extends React.Component {
-  constructor(props) {
-    super(props);
-    this.state = {
-      bikeImg: undefined,
-      currentBike: undefined,
-      bikes: [],
-      tasks: [],
-    }
-  this.addTask = this.addTask.bind(this);
-  this.deleteTask = this.deleteTask.bind(this);
-  this.editTask = this.editTask.bind(this);
-  this.completeTask = this.completeTask.bind(this);
-  this.promptBike = this.promptBike.bind(this);
-  this.addBike = this.addBike.bind(this);
-  this.changeBike = this.changeBike.bind(this);
-  this.deleteBike = this.deleteBike.bind(this);
-  }
+const TaskList = () => {
 
-  componentDidMount() {
+  const [bikeImg, setImg] = useState('https://media.tenor.com/On7kvXhzml4AAAAj/loading-gif.gif');
+  const [currentBike, setCurrentBike] = useState(null);
+  const [bikes, setBikes] = useState([]);
+  const [tasks, setTasks] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [imgCache, setImgCache] = useState({});
+
+
+  useEffect(() => {
     fetch('/api/all')
         .then(res => res.json())
         .then(data => {
-            return this.setState({
-                ...this.state,
-                tasks: data.tasks,
-                bikes: data.bikes,
-                currentBike: data.bikes[0]
-            })
+          setTasks(data.tasks);
+          setBikes(data.bikes);
+          setCurrentBike(data.bikes[0]);
         })
-        .then(res => {if (this.state.currentBike !== undefined) {
-          let query = `${this.state.currentBike.year}+${this.state.currentBike.make}+${this.state.currentBike.model}`.replace(/\s/g, '+')
-          fetch(`https://www.googleapis.com/customsearch/v1?key=AIzaSyAYKIcLqDJPrytgaJBawgXStAISUhf9stE&cx=b5cac7e077796450d&q=${query}`)
-            .then(res => res.json())
-            .then(data => {
-              return this.setState({
-                ...this.state,
-                bikeImg: data.items[0].pagemap.cse_image[0].src
-              })
-            })
-          }})
-        
-  }
+  }, [])
 
-  async addTask(event) {
-    if (this.state.currentBike === undefined) {
+  useEffect(async () => {
+    setLoading(true);
+    if (currentBike) {
+      let query = `${currentBike.year}+${currentBike.make}+${currentBike.model}`.replace(/\s/g, '+')
+      if (imgCache[query]) setImg(imgCache[query]);
+      else await fetch(`/api/BikeImg/${query}`)
+        .then(res => res.json())
+        .then(img => {
+          setImg(img);
+          setImgCache({...imgCache, query: img})
+        })
+        .catch(err => console.log(err.toString()));
+      }
+    setLoading(false);
+  }, [currentBike])
+
+  const addTask = async(event) => {
+    if (!currentBike) {
       window.alert('You must add a bike first');
       throw new Error('You must add a bike first');
     }
@@ -57,16 +49,20 @@ class TaskList extends React.Component {
     let maint = event.target.previousSibling.previousSibling.lastChild.checked;
     let cost = event.target.previousSibling.value;
     if (cost === '') cost = 0;
-    // if (!(/^\d+$/.test(cost))) {
-    //   window.alert('Cost must be a number');
-    //   throw new Error('Cost must be a number');
-    // }
+    cost = cost.replace(/\,/g,'');
+    cost = cost.split('.');
+    if (!cost.every(el => (/^\d+$/.test(el))) || cost.length > 2) {
+      window.alert('Cost must be a number with no more than one decimal');
+      throw new Error('Cost must be a number');
+    }
+    cost = cost.join('.');
     if (task === '') throw new Error('You must input something into the text field before adding a task. It cannot be left blank');
-    cost = Number(cost).toFixed(2);
+    cost = cost.toLocaleString("en-US", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    });
 
-    await this.setState(prevState => ({
-      tasks: prevState.tasks.concat({done: false, maint: maint, task: task, cost: cost})
-    }))
+    setTasks(tasks.concat({done: false, maint, task, cost}))
 
     await fetch('/api', {
       method: 'POST',
@@ -78,7 +74,7 @@ class TaskList extends React.Component {
           maint: maint,
           task: task,
           cost: cost,
-          moto_id: this.state.currentBike._id,
+          moto_id: currentBike._id,
         }
       )
     })
@@ -87,10 +83,7 @@ class TaskList extends React.Component {
     fetch('/api/tasks')
         .then(res => res.json())
         .then(data => {
-          return this.setState({
-            ...this.state,
-            tasks: data.tasks,
-        })
+          return setTasks(data.tasks)
         })
     
     event.target.previousSibling.previousSibling.previousSibling.value = '';
@@ -98,19 +91,18 @@ class TaskList extends React.Component {
     event.target.previousSibling.previousSibling.lastChild.checked = false;
   }
 
-  async deleteTask(event) {
+  const deleteTask = async (event) => {
 
     const id = event.target.parentNode.parentNode.id;
     let index;
-    for (let i = 0; i < this.state.tasks.length; i++) {
-      if (this.state.tasks[i]._id === id) index = i;
+    for (let i = 0; i < tasks.length; i++) {
+      if (tasks[i]._id === id) index = i;
     }
 
-    await this.setState(prevState => ({
-      tasks: prevState.tasks.filter(el => {
-        return prevState.tasks.indexOf(el) !== index;
-      })
-    }))
+    setTasks(tasks.filter(el => {
+        return tasks.indexOf(el) !== index;
+      }))
+    
 
     await fetch('/api', {
       method: 'DELETE',
@@ -124,21 +116,20 @@ class TaskList extends React.Component {
     .catch(err => console.error('error with DELETE FETCH'))
   }
 
-  async editTask(event) {
+  const editTask = async (event) => {
     let currentTask = event.target.parentNode.previousSibling.previousSibling.previousSibling.textContent;
     let newTask = window.prompt('Edit your task: ', currentTask);
     
     const id = event.target.parentNode.parentNode.id;
-    await this.setState(prevState => ({
-      tasks: prevState.tasks.map(el => {
-        if (el._id === id) {
-        return {
-          ...el,
-          task: newTask,
-        }
+ 
+    setTasks(tasks.map(el => {
+      if (el._id === id) {
+      return {
+        ...el,
+        task: newTask,
       }
-        else return el;
-      })
+    }
+      else return el;
     }))
 
     await fetch('/api', {
@@ -154,20 +145,18 @@ class TaskList extends React.Component {
   }
 
 
-  async completeTask(event) {
+  const completeTask = async (event) => {
     let value = event.target.checked;
     const id = event.target.parentNode.parentNode.id;
-    
-    await this.setState(prevState => ({
-      tasks: prevState.tasks.map(el => {
-        if (el._id === id) {
-        return {
-          ...el,
-          done: value,
-        }
+
+    setTasks(tasks.map(el => {
+      if (el._id === id) {
+      return {
+        ...el,
+        done: value,
       }
-        else return el;
-      })
+    }
+      else return el;
     }))
 
     await fetch('/api', {
@@ -182,12 +171,12 @@ class TaskList extends React.Component {
     .catch(err => console.error('error with PATCH FETCH'))
   }
 
-  async promptBike(event) {
+  const promptBike = (event) => {
     document.querySelector('#addNewBikeButton').style.display = 'none';
     document.querySelector('.prompt').style.display = 'flex';
   }
 
-  async addBike(event) {
+  const addBike = async (event) => {
     
     let year = event.target.previousSibling.previousSibling.previousSibling.value;
     let make = event.target.previousSibling.previousSibling.value;
@@ -205,10 +194,9 @@ class TaskList extends React.Component {
       model: model
     }
 
-    await this.setState(prevState => ({
-      currentBike: bikeObj,
-      bikes: prevState.bikes.concat(bikeObj)
-    }))
+    setCurrentBike(bikeObj);
+    setBikes(bikes.concat(bikeObj));
+
 
     document.querySelector('.prompt').style.display = 'none';
     document.querySelector('#addNewBikeButton').style.display = 'flex';
@@ -231,74 +219,37 @@ class TaskList extends React.Component {
     })
     .then(res => res.json())
     .then(data => {
-      return this.setState({
-        ...this.state,
-        currentBike: data
+      return setCurrentBike(data);
       })
-    })
     .catch(err => console.error('error with POST FETCH @ Add Button'))
 
     await fetch('/api/bike')
         .then(res => res.json())
         .then(data => {
-          return this.setState({
-            ...this.state,
-            bikes: data.bikes,
+          return setBikes(data.bikes)
         })
-        })
-    
-    if (this.state.currentBike !== undefined) {
-      let query = `${this.state.currentBike.year}+${this.state.currentBike.make}+${this.state.currentBike.model}`.replace(/\s/g, '+')
-      fetch(`https://www.googleapis.com/customsearch/v1?key=AIzaSyAYKIcLqDJPrytgaJBawgXStAISUhf9stE&cx=b5cac7e077796450d&q=${query}`)
-        .then(res => res.json())
-        .then(data => {
-          return this.setState({
-            ...this.state,
-            bikeImg: data.items[0].pagemap.cse_image[0].src
-          })
-        })
-      }
   }
 
-  async changeBike(event) {
+  const changeBike = async (event) => {
 
-    if (event.target.id === this.state.currentBike._id) return;
+    if (event.target.id === currentBike._id) return;
 
-    else {
-      await this.setState(prevState => ({
-        currentBike: prevState.bikes.filter(el => {
-          return el._id === event.target.id;
-        })[0],
-        bikeImg: 'https://media.tenor.com/On7kvXhzml4AAAAj/loading-gif.gif'
-      }))
-    }
-
-    if (this.state.currentBike !== undefined) {
-      let query = `${this.state.currentBike.year}+${this.state.currentBike.make}+${this.state.currentBike.model}`.replace(/\s/g, '+')
-      fetch(`https://www.googleapis.com/customsearch/v1?key=AIzaSyAYKIcLqDJPrytgaJBawgXStAISUhf9stE&cx=b5cac7e077796450d&q=${query}`)
-        .then(res => res.json())
-        .then(data => {
-          return this.setState({
-            ...this.state,
-            bikeImg: data.items[0].pagemap.cse_image[0].src
-          })
-        })
-      }
+    setCurrentBike(bikes.filter(el => {
+      return el._id === event.target.id;
+    })[0])
 }
 
-  async deleteBike(event) {
-    let confirm = window.confirm(`Current bike: ${this.state.currentBike.year} ${this.state.currentBike.make} ${this.state.currentBike.model}\n \nAre you sure you want to delete this bike?\n \n This will delete all of its tasks as well. This cannot be undone`)
+  const deleteBike = async (event) => {
+    let confirm = window.confirm(`Current bike: ${currentBike.year} ${currentBike.make} ${currentBike.model}\n \nAre you sure you want to delete this bike?\n \n This will delete all of its tasks as well. This cannot be undone`)
 
-    let id = this.state.currentBike._id
+    let id = currentBike._id
 
     if (confirm === true) {
-      await this.setState(prevState => ({
-        currentBike: prevState.bikes.filter(el => {
-          return el._id !== prevState.currentBike._id;
-        })[0],
-        bikes: prevState.bikes.filter(el => {
-          return el._id !== prevState.currentBike._id;
-        })
+      setCurrentBike(bikes.filter(el => {
+        return el._id !== currentBike._id;
+      })[0])
+      setBikes(bikes.filter(el => {
+        return el._id !== currentBike._id;
       }))
   
       await fetch('/api/bike', {
@@ -314,46 +265,37 @@ class TaskList extends React.Component {
     }
   }
 
-  render() {
-    const tasks = [];
-    const completed = [];
-    const bikeButtons = [];
-    const deleteBike = [];
-    const bikeImg = [];
-    let activeTasks = 0;
-    let completedTasks = 0;
-    let totalCost = 0;
-    let totalSpent = 0;
-    if (this.state.tasks.length === 0) tasks.push(<h2 id='noTasks' key='noTasks'>You don't have any tasks. Add one using the input box above.</h2>)
-    
-    else if (this.state.currentBike !== undefined) {
-      for (let i = 0; i < this.state.tasks.length; i++) {
-        let number = -1 - i;
-        if (this.state.tasks[i].moto_id === this.state.currentBike._id && this.state.tasks[i].done === false) {
-          tasks.push(<Task className='task' number={number} task={this.state.tasks[i]} key={i} deleteTask={this.deleteTask} editTask={this.editTask} completeTask={this.completeTask}/>);
-          totalCost += this.state.tasks[i].cost;
-          activeTasks++;
-        }
-        else if (this.state.tasks[i].moto_id === this.state.currentBike._id) {
-          completed.push(<Task className='completedTask' number={number} task={this.state.tasks[i]} key={i} deleteTask={this.deleteTask} editTask={this.editTask} completeTask={this.completeTask}/>)
-          totalSpent += this.state.tasks[i].cost;
-          completedTasks++;
-        }
+  const tasksArr = [];
+  const completedArr = [];
+  const bikeButtonsArr = [];
+  let activeTasks = 0;
+  let completedTasks = 0;
+  let totalCost = 0;
+  let totalSpent = 0;
+  let currentBikeString = 'Current bike: ';
+
+  if (currentBike) {
+    for (let i = 0; i < tasks.length; i++) {
+      let number = -1 - i;
+      if (tasks[i].moto_id === currentBike._id && tasks[i].done === false) {
+        tasksArr.push(<Task className='task' number={number} task={tasks[i]} key={i} deleteTask={deleteTask} editTask={editTask} completeTask={completeTask}/>);
+        totalCost += tasks[i].cost;
+        activeTasks++;
+      }
+      else if (tasks[i].moto_id === currentBike._id) {
+        completedArr.push(<Task className='completedTask' number={number} task={tasks[i]} key={i} deleteTask={deleteTask} editTask={editTask} completeTask={completeTask}/>)
+        totalSpent += tasks[i].cost;
+        completedTasks++;
       }
     }
 
-    let currentBikeString = 'Current bike: ';
-    if (this.state.currentBike !== undefined) currentBikeString = `Current bike is:  ${this.state.currentBike.year} ${this.state.currentBike.make} ${this.state.currentBike.model}`
+    currentBikeString = `Current bike is:  ${currentBike.year} ${currentBike.make} ${currentBike.model}`
 
-    for (let i = 0; i < this.state.bikes.length; i++) {
-      let keyString = `${this.state.bikes[i].year}${this.state.bikes[i].make}${this.state.bikes[i].model}`
-      bikeButtons.push(<BikeButton key={keyString} thisBike={this.state.bikes[i]} currentBike={this.state.currentBike} id={this.state.bikes[i]._id} changeBike={this.changeBike}/>)
+    for (let i = 0; i < bikes.length; i++) {
+      let keyString = `${bikes[i].year}${bikes[i].make}${bikes[i].model}`
+      bikeButtonsArr.push(<BikeButton key={keyString} thisBike={bikes[i]} currentBike={currentBike} id={bikes[i]._id} changeBike={changeBike}/>)
     }
-
-    if (this.state.currentBike !== undefined) {
-      deleteBike.push(<button key={deleteBike} id='deleteBike' onClick={this.deleteBike}>Delete Current Bike</button>)
-      bikeImg.push(<img id='bikeImg' src={this.state.bikeImg}></img>)
-    }
+  }
 
     return(
       <div id='bigContainer'>
@@ -361,20 +303,20 @@ class TaskList extends React.Component {
           <input placeholder='Year'></input>
           <input placeholder='Make'></input>
           <input placeholder='Model'></input>
-          <input id='addBikeButton' onClick={this.addBike} type="submit" value='Add Bike'></input>
+          <input id='addBikeButton' onClick={addBike} type="submit" value='Add Bike'></input>
         </div>
         <div className='bikeButtons'>
-          <button className='bikeButton' onClick={this.promptBike} id='addNewBikeButton'>Add New Bike</button>
-          {deleteBike}
+          <button className='bikeButton' onClick={promptBike} id='addNewBikeButton'>Add New Bike</button>
+          <button key={deleteBike} id='deleteBike' onClick={deleteBike}>Delete Current Bike</button>
           <p>{currentBikeString}</p>
           <div id='bikeContainer'>
-            {bikeButtons}
+            {bikeButtonsArr}
           </div>
         </div>
-        <AddTask addTask={this.addTask}/>
+        <AddTask addTask={addTask}/>
         <div>
           <p className='stats' id='totalTasks'>Total Incomplete Tasks: {activeTasks}</p>
-          <p className='stats' id='totalCost'>Total Cost: $ {Number(totalCost).toFixed(2)}</p>
+          <p className='stats' id='totalCost'>Total Cost: $ {totalCost.toLocaleString("en-US", {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
         </div>
         <div className='columns'>
           <p>Completed?</p>
@@ -384,20 +326,22 @@ class TaskList extends React.Component {
           <p id='optionsColumn'>Options</p>
         </div>
         <div>
-          {tasks}
+          {tasks.length ? 
+          tasksArr
+          : 
+          <h2 id='noTasks' key='noTasks'>You don't have any tasks. Add one using the input box above.</h2>}
         </div>
         <hr></hr>
         <div>
           <p className='columns'>Completed Tasks</p>
           <p className='stats' id='totalCompletedTasks'>Total Completed Tasks: {completedTasks}</p>
-          <p className='stats'>Total Spent: $ {Number(totalSpent).toFixed(2)}</p>
+          <p className='stats'>Total Spent: $ {totalSpent.toLocaleString("en-US", {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
           <p className='stats'>Uncheck to revert back to incomplete</p>
-          {completed}
+          {completedArr}
         </div>
-        {bikeImg}
+        {loading ? <img className='bikeImg' src='https://media.tenor.com/On7kvXhzml4AAAAj/loading-gif.gif'></img> : <img className='bikeImg' src={bikeImg}></img>}
       </div>
     )
-  } 
 }
 
 

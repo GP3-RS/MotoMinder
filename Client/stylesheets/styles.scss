@@ -1,12 +1,14 @@
-@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300&family=Roboto&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@500&family=Poppins:wght@300&family=Roboto&family=Scada&family=Work+Sans:wght@200;400;500;800&display=swap');
 
-$primary-light: rgb(245, 245, 245);
-$secondary-light: gainsboro;
+$primary-light: rgb(249, 249, 249);
+$secondary-light: rgb(235, 242, 250);
 $primary-dark: black;
 $secondary-dark: rgb(50, 50, 50);
-$primary-color-light: rgb(156, 205, 181);
-$primary-color-med: rgb(27, 114, 69);
-$primary-color-dark:rgb(18, 72, 44);
+$primary-color-light: rgb(232, 233, 237);
+$primary-color-med: rgb(76, 134, 168);
+$primary-color-dark:rgb(61, 43, 61);
+$font1: Work Sans;
+$font2: Poppins;
 
 
 body {
@@ -18,10 +20,11 @@ body {
     height: 100%;
     max-height: 100%;
     justify-content: center;
-    font-family: Montserrat;
-    font-weight: 600;
+    font-family: $font1;
+    font-weight: 400;
     font-size: 18px;
     color:$secondary-dark;
+    cursor: default;
 }
 
 #root {
@@ -104,7 +107,7 @@ h1 {
     max-width: 100%;
     align-items: center;
     border-radius: 14px;
-    font-family: Roboto;
+    font-family: $font2;
 
     &:hover {
         background-color: $primary-color-light;
@@ -133,7 +136,7 @@ label {
         width: 20px;
         height: 20px;
         align-self: center;
-        border: 1px solid gainsboro;
+        border: 1px solid $primary-light;
         outline: none;
     }
 
@@ -142,7 +145,7 @@ label {
     }
 
     &:active {
-        color:rgb(27, 114, 69)
+        color: $primary-color-med;
     }
 }
 
@@ -156,6 +159,7 @@ label {
 .completedRadio {
     width: 132px;
     height: 20px;
+    cursor: pointer;
 }
 
 .taskText {
@@ -269,12 +273,12 @@ label {
     max-width: 100%;
     align-items: center;
     border-radius: 14px;
-    font-family: Roboto;
-    color: $primary-color-light;
+    font-family: $font2;
+    color: $primary-color-dark;
 
     &:hover {
         background-color: $primary-color-light;
-        color: $primary-light
+        color: $primary-color-dark
     }
 }
 
@@ -290,7 +294,7 @@ hr {
     background-color: $primary-color-light;
     border: none;
     font-size: 18px;
-    font-family: Roboto;
+    font-family: $font2;
     border-radius: 7px;
     min-height: fit-content;
 
@@ -313,7 +317,7 @@ hr {
     background-color: $primary-color-dark;
     border: none;
     font-size: 18px;
-    font-family: Roboto;
+    font-family: $font2;
     border-radius: 7px;
     min-height: fit-content;
     color: $primary-light;
@@ -334,16 +338,16 @@ hr {
 #deleteBike {
     margin-top: 20px;
     padding: 5px;
-    background-color: rgb(134, 2, 0);
+    background-color: rgb(181, 101, 118);
     border: none;
     font-size: 18px;
-    font-family: Roboto;
+    font-family: $font2;
     border-radius: 7px;
     min-height: fit-content;
     color: $primary-light;
 
     &:hover {
-        background-color: rgb(215, 0, 0);
+        background-color: rgb(161, 7, 7);
         cursor: pointer;
         color: white;
     }
@@ -402,7 +406,7 @@ hr {
     align-items: center;
 }
 
-#bikeImg {
+.bikeImg {
     max-width: 50%;
     align-self: center;
     border-radius: 10px;
